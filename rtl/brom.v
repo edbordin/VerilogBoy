@@ -26,9 +26,9 @@ module brom(
     
     reg [7:0] brom_array [0:255]; // 256 Bytes BROM array
    
-    initial begin
-        $readmemh("bootrom.mif", brom_array, 0, 255);
-    end
+    // initial begin
+        // $readmemh("bootrom.mif", brom_array, 0, 255);
+    // end
     
     assign d = brom_array[a];
 
