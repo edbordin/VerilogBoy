@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //define our module and it's inputs/outputs
 module top(
-	// input CLK,
+	input CLK,
 	// input BTN1,
 	// input BTN2,
 	// input BTN3,
@@ -11,6 +11,32 @@ module top(
 	// output [6:0] seg,
 	// output ca
     );
+	
+	wire          clk_core;
+	
+	SB_PLL40_PAD #(
+	  .DIVR(4'b0010), // 4MHz
+	  .DIVF(7'b0000000),
+	  .DIVQ(3'b000),
+	  .FILTER_RANGE(3'b001),
+	  .FEEDBACK_PATH("SIMPLE"),
+	  .DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
+	  .FDA_FEEDBACK(4'b0000),
+	  .DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
+	  .FDA_RELATIVE(4'b0000),
+	  .SHIFTREG_DIV_MODE(2'b00),
+	  .PLLOUT_SELECT("GENCLK"),
+	  .ENABLE_ICEGATE(1'b0)
+	) core_pll (
+	  .PACKAGEPIN(CLK),
+	  .PLLOUTCORE(clk_core),
+	  //.PLLOUTGLOBAL(),
+	  .EXTFEEDBACK(),
+	  .DYNAMICDELAY(),
+	  .RESETB(1'b1),
+	  .BYPASS(1'b0),
+	  .LATCHINPUTVALUE(),
+	);
 	
 	// ----------------------------------------------------------------------
     // VerilogBoy core
@@ -32,6 +58,8 @@ module top(
     wire        vb_valid;
     wire [15:0] vb_left;
     wire [15:0] vb_right;
+	wire vb_done;
+	wire vb_fault;
 
     boy boy(
         .rst(vb_rst),
@@ -52,9 +80,11 @@ module top(
         .valid(vb_valid),
         .left(vb_left),
         .right(vb_right),
-        .done(done),
-		.fault(fault)
+        .done(vb_done),
+		.fault(vb_fault)
     );
+	
+	
 	
 	// module boy(
     // input wire rst, // Async Reset Input
