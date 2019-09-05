@@ -1,44 +1,77 @@
 `timescale 1ns / 1ps
 //define our module and it's inputs/outputs
 module top(
-	input CLK,
-	// input BTN1,
-	// input BTN2,
-	// input BTN3,
-	// input BTN_N,
-	// input [7:0] sw,
-	// output [4:0] led,
-	// output [6:0] seg,
-	// output ca
+    input CLK,
+    output FLASH_SCK,
+    inout FLASH_SSB,
+    inout FLASH_IO0,
+    inout FLASH_IO1,
+    inout FLASH_IO2,
+    inout FLASH_IO3,
+    output P1A1,
+    output P1A2,
+    output P1A3,
+    output P1A4,
+    output P1A7,
+    output P1A8,
+    output P1A9,
+    output P1A10,
+
+    output P1B1,
+    output P1B2,
+    output P1B3,
+    output P1B4,
+    output P1B7,
+    output P1B8,
+    output P1B9,
+    output P1B10,
+    input P2_1,
+    input P2_10
     );
-	
-	wire          clk_core;
-	
-	SB_PLL40_PAD #(
-	  .DIVR(4'b0010), // 4MHz
-	  .DIVF(7'b0000000),
-	  .DIVQ(3'b000),
-	  .FILTER_RANGE(3'b001),
-	  .FEEDBACK_PATH("SIMPLE"),
-	  .DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
-	  .FDA_FEEDBACK(4'b0000),
-	  .DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
-	  .FDA_RELATIVE(4'b0000),
-	  .SHIFTREG_DIV_MODE(2'b00),
-	  .PLLOUT_SELECT("GENCLK"),
-	  .ENABLE_ICEGATE(1'b0)
-	) core_pll (
-	  .PACKAGEPIN(CLK),
-	  .PLLOUTCORE(clk_core),
-	  //.PLLOUTGLOBAL(),
-	  .EXTFEEDBACK(),
-	  .DYNAMICDELAY(),
-	  .RESETB(1'b1),
-	  .BYPASS(1'b0),
-	  .LATCHINPUTVALUE(),
-	);
-	
-	// ----------------------------------------------------------------------
+    
+    wire          clk_hdmi;
+    wire          clk_core_local;
+    wire          clk_core;
+    
+    
+    // 39.75 MHz clock
+    SB_PLL40_PAD #(
+      .FEEDBACK_PATH("SIMPLE"),
+      .DIVR(4'b0000),         // DIVR =  0
+      .DIVF(7'b0110100),      // DIVF = 52
+      .DIVQ(3'b100),          // DIVQ =  4
+      .FILTER_RANGE(3'b001),   // FILTER_RANGE = 1
+      .DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
+      .FDA_FEEDBACK(4'b0000),
+      .DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
+      .FDA_RELATIVE(4'b0000),
+      .SHIFTREG_DIV_MODE(2'b00),
+      .PLLOUT_SELECT("GENCLK"),
+      .ENABLE_ICEGATE(1'b0)
+    ) core_pll (
+      .PACKAGEPIN(CLK),
+      .PLLOUTGLOBAL(clk_hdmi),
+      //.PLLOUTGLOBAL(),
+      .EXTFEEDBACK(),
+      .DYNAMICDELAY(),
+      .RESETB(1'b1),
+      .BYPASS(1'b0),
+      .LATCHINPUTVALUE(),
+    );
+    
+    clk_div #(
+        .WIDTH(4),
+        .DIV(10)
+    ) clk_div_4mhz (
+        .i(clk_hdmi),
+        .o(clk_core_local)
+    );
+    SB_GB clk_global_buf (
+        .USER_SIGNAL_TO_GLOBAL_BUFFER (clk_core_local),
+        .GLOBAL_BUFFER_OUTPUT (clk_core)
+        );
+    
+    // ----------------------------------------------------------------------
     // VerilogBoy core
     
     reg vb_rst;
@@ -58,8 +91,12 @@ module top(
     wire        vb_valid;
     wire [15:0] vb_left;
     wire [15:0] vb_right;
-	wire vb_done;
-	wire vb_fault;
+    wire vb_done;
+    wire vb_fault;
+    
+    assign vb_rst = 0;
+    assign vb_din = 1;
+    assign {P1A1, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, P1B1, P1B2, P1B3, P1B4, P1B7, P1B8, P1B9, P1B10} = vb_a;
 
     boy boy(
         .rst(vb_rst),
@@ -81,12 +118,12 @@ module top(
         .left(vb_left),
         .right(vb_right),
         .done(vb_done),
-		.fault(vb_fault)
+        .fault(vb_fault)
     );
-	
-	
-	
-	// module boy(
+    
+    
+    
+    // module boy(
     // input wire rst, // Async Reset Input
     // input wire clk, // 4.19MHz Clock Input
     // output wire phi, // 1.05MHz Reference Clock Output
@@ -111,5 +148,5 @@ module top(
     // output wire done,
     // output wire fault
     // );
-	
-	endmodule
+    
+    endmodule
